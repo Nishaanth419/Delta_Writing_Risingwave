@@ -25,7 +25,7 @@ flowchart LR
     subgraph Streaming System
         P[Python Change Event Producer]
         K[(Kafka Broker)]
-        Z[Zookeeper]
+        
     end
 
     subgraph RisingWave Engine
@@ -39,7 +39,7 @@ flowchart LR
     S --> MV
     S --> H
     MV --> Q1
-    Z --- K
+    
 ```
 
 ✅ Includes: Kafka Broker, Zookeeper, RisingWave streaming + storage, consumers.
