@@ -203,7 +203,62 @@ WHERE e.op != 'delete';
 
 ### ✅ producer.py
 ```python
-<producer.py content omitted here for brevity>
+import json
+import time
+import random
+from datetime import datetime, timezone
+from kafka import KafkaProducer, KafkaAdminClient
+from kafka.admin import NewTopic
+from kafka.errors import TopicAlreadyExistsError, NoBrokersAvailable
+
+KAFKA_BOOTSTRAP = "localhost:9092"
+TOPIC = "user-events"
+
+def ensure_topic():
+    try:
+        admin = KafkaAdminClient(bootstrap_servers=KAFKA_BOOTSTRAP)
+        topic = NewTopic(name=TOPIC, num_partitions=1, replication_factor=1)
+        try:
+            admin.create_topics([topic])
+        except TopicAlreadyExistsError:
+            pass
+        admin.close()
+    except NoBrokersAvailable:
+        raise
+
+def run_producer(send_count=100):
+    ensure_topic()
+    producer = KafkaProducer(
+        bootstrap_servers=KAFKA_BOOTSTRAP,
+        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+    )
+    event_order = 1
+    users = [
+        {"id": 1, "name": "Alice", "age": 25},
+        {"id": 2, "name": "Bob", "age": 30},
+        {"id": 3, "name": "Charlie", "age": 36},
+    ]
+
+    for _ in range(send_count):
+        u = random.choice(users)
+        op = random.choice(["insert","update","delete"])
+        payload = {
+            "id": u["id"],
+            "name": u["name"] if op!="delete" else None,
+            "age": u["age"] if op!="delete" else None,
+            "op": op,
+            "event_order": event_order,
+            "ts": datetime.now(timezone.utc).isoformat()
+        }
+        producer.send(TOPIC, value=payload)
+        print("Sent:", payload)
+        event_order += 1
+        time.sleep(1)
+
+    producer.close()
+
+if __name__ == "__main__":
+    run_producer()
 ```
 
 ---
