@@ -1,5 +1,5 @@
 # 🚀 Delta Writing with Kafka & RisingWave  
-### Real-Time Streaming State Management
+### Real-Time Streaming State Management (Enterprise Architecture)
 
 This project demonstrates a **real-time delta writing architecture**, where change events continuously update the latest dataset state using:
 
@@ -7,94 +7,56 @@ This project demonstrates a **real-time delta writing architecture**, where chan
 |----------|------|
 | ✅ Python Producer | Publishes insert/update/delete events to Kafka |
 | ✅ Apache Kafka | Event streaming backbone |
-| ✅ RisingWave | Streaming SQL database maintaining the latest state |
+| ✅ RisingWave | Streaming SQL database computing the latest state |
+| ✅ Docker Infrastructure | Containerized orchestration |
 
 ---
 
-## ✅ Result
+## 🏗 Enterprise Architecture Diagram
 
-RisingWave continuously merges all delta changes to maintain a **correct and up-to-date** state — including deletes ✔
+```mermaid
+flowchart LR
+    subgraph Client Apps
+        Q1[BI / Dashboard / API Consumers]
+    end
+
+    subgraph Streaming System
+        P[Python Change Event Producer]
+        K[(Kafka Broker)]
+        Z[Zookeeper]
+    end
+
+    subgraph RisingWave Engine
+        S[Kafka Source: user_events]
+        MV[Materialized View: latest_user_state]
+        H[(Event Log Storage)]
+    end
+
+    P --> K
+    K --> S
+    S --> MV
+    S --> H
+    MV --> Q1
+    Z --- K
+```
+
+✅ Includes: Kafka Broker, Zookeeper, RisingWave streaming + storage, consumers.
 
 ---
 
-## 🏗 Architecture & Workflow
+## ✅ Requirements & Installation Steps
 
-```
-Python Producer
-        ↓
-Kafka Topic: user-events
-        ↓
-RisingWave SOURCE (stream)
-        ↓
-Materialized View:
-    latest_user_state
-```
+### ✅ System Requirements
 
-✔ Full change event history retained  
-✔ Final snapshot always accurate  
-✔ Deletes handled correctly  
+| Software | Usage | Install Steps |
+|---------|------|---------------|
+| Docker Desktop | Container services | https://docker.com |
+| Docker Compose | Run Kafka + RisingWave stack | Included with Docker Desktop |
+| Python 3.10+ | Run producer script | https://python.org |
+| PostgreSQL psql CLI | Execute SQL | https://postgresql.org |
+| VS Code (Optional) | Development | https://code.visualstudio.com |
 
----
-
-## 🔧 Requirements
-
-| Software | Version | Usage |
-|---------|---------|------|
-| Docker + Docker Compose | Latest | Run Kafka & RisingWave |
-| Python | 3.10+ | Kafka event producer |
-| Kafka Client Library | kafka-python | Send messages to Kafka |
-| PostgreSQL CLI | psql | Setup SQL pipelines |
-
----
-
-## 🧰 Tools Installation Guide
-
-### ✅ Install Docker & Docker Compose
-
-#### Windows / Mac  
-Download Docker Desktop from docker.com
-
-#### Linux (Ubuntu Example)
-
-```sh
-sudo apt update
-sudo apt install docker.io docker-compose -y
-sudo systemctl enable --now docker
-```
-
-Verify:
-
-```sh
-docker --version
-docker-compose --version
-```
-
----
-
-### ✅ Install PostgreSQL CLI
-
-Ubuntu:
-
-```sh
-sudo apt install postgresql-client -y
-```
-
-Mac:
-
-```sh
-brew install libpq
-brew link --force libpq
-```
-
-Verify:
-
-```sh
-psql --version
-```
-
----
-
-### ✅ Install Python Dependencies
+### Install kafka-python
 
 ```sh
 pip install kafka-python
@@ -102,46 +64,59 @@ pip install kafka-python
 
 ---
 
-## ▶️ Setup & Execution Guide
+## 🧱 Docker Setup
 
-### ✅ 1️⃣ Start Streaming Environment
+### Start infrastructure (Kafka + Zookeeper + RisingWave)
 
 ```sh
 docker-compose up -d
 ```
 
-Check containers:
+### Check status
 
 ```sh
 docker ps
 ```
 
+### Stop containers
+
+```sh
+docker-compose down
+```
+
 ---
 
-### ✅ 2️⃣ Initialize RisingWave SQL
+## ▶️ Usage Guide
+
+### Step 1️⃣: Initialize Database Objects
 
 ```sh
 psql -h localhost -p 4566 -U root -f init.sql
 ```
 
+✅ Creates Kafka Source  
+✅ Creates Materialized View (delta merge)
+
 ---
 
-### ✅ 3️⃣ Run Delta Change Producer
+### Step 2️⃣: Start Streaming Producer
 
 ```sh
 python producer.py
 ```
 
+📌 Generates insert/update/delete events every second
+
 ---
 
-### ✅ 4️⃣ Query RisingWave
+### Step 3️⃣: Query Streaming State
 
-Event log:
+#### Event History
 ```sql
 SELECT * FROM user_events ORDER BY event_order DESC LIMIT 20;
 ```
 
-Latest state:
+#### Latest User Snapshot
 ```sql
 SELECT * FROM latest_user_state ORDER BY id;
 ```
@@ -150,34 +125,145 @@ SELECT * FROM latest_user_state ORDER BY id;
 
 ## 📂 Project Structure
 
-| File | Purpose |
-|------|---------|
-| `docker-compose.yml` | Runs Kafka & RisingWave |
-| `init.sql` | Creates streaming tables/views |
-| `producer.py` | Generates streaming CRUD events |
+```
+risingwave-kafka-pipeline/
+│── docker-compose.yml
+│── init.sql
+│── producer.py
+│── README.md
+```
 
 ---
 
-## 🛠 Troubleshooting & Fixes
+## 📌 Full Code
 
-| Issue | Fix |
-|------|-----|
-| `psql not recognized` | Add PostgreSQL bin folder to PATH |
-| Kafka connection failed | Restart docker-compose |
-| Permission denied | Run PowerShell as Admin |
+### ✅ init.sql
+```sql
+DROP SOURCE IF EXISTS user_events CASCADE;
+DROP MATERIALIZED VIEW IF EXISTS latest_user_state CASCADE;
+
+CREATE SOURCE user_events (
+    id INT,
+    name VARCHAR,
+    age INT,
+    op VARCHAR,
+    event_order BIGINT,
+    ts TIMESTAMP
+)
+WITH (
+    connector = 'kafka',
+    topic = 'user-events',
+    properties.bootstrap.server = 'localhost:9092',
+    scan.startup.mode = 'earliest'
+)
+FORMAT PLAIN ENCODE JSON;
+
+CREATE MATERIALIZED VIEW latest_user_state AS
+SELECT e.id, e.name, e.age
+FROM user_events e
+JOIN (
+    SELECT id, MAX(event_order) AS latest_order
+    FROM user_events
+    GROUP BY id
+) latest
+  ON e.id = latest.id AND e.event_order = latest.latest_order
+WHERE e.op != 'delete';
+```
+
+✅ Supports deletes correctly
 
 ---
 
-## 🚀 Future Enhancements
+### ✅ producer.py
+```python
+import json
+import time
+import random
+from datetime import datetime, timezone
+from kafka import KafkaProducer, KafkaAdminClient
+from kafka.admin import NewTopic
+from kafka.errors import TopicAlreadyExistsError, NoBrokersAvailable
 
-- Debezium CDC streaming
-- S3/Iceberg historical warehouse
-- Real-time dashboards
+KAFKA_BOOTSTRAP = "localhost:9092"
+TOPIC = "user-events"
+
+def ensure_topic():
+    try:
+        admin = KafkaAdminClient(bootstrap_servers=KAFKA_BOOTSTRAP)
+        topic = NewTopic(name=TOPIC, num_partitions=1, replication_factor=1)
+        try:
+            admin.create_topics([topic])
+        except TopicAlreadyExistsError:
+            pass
+        admin.close()
+    except NoBrokersAvailable:
+        raise
+
+def run_producer(send_count=100):
+    ensure_topic()
+    producer = KafkaProducer(
+        bootstrap_servers=KAFKA_BOOTSTRAP,
+        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+    )
+    event_order = 1
+    users = [
+        {"id": 1, "name": "Alice", "age": 25},
+        {"id": 2, "name": "Bob", "age": 30},
+        {"id": 3, "name": "Charlie", "age": 36},
+    ]
+
+    for _ in range(send_count):
+        u = random.choice(users)
+        op = random.choice(["insert","update","delete"])
+        payload = {
+            "id": u["id"],
+            "name": u["name"] if op!="delete" else None,
+            "age": u["age"] if op!="delete" else None,
+            "op": op,
+            "event_order": event_order,
+            "ts": datetime.now(timezone.utc).isoformat()
+        }
+        producer.send(TOPIC, value=payload)
+        print("Sent:", payload)
+        event_order += 1
+        time.sleep(1)
+
+    producer.close()
+
+if __name__ == "__main__":
+    run_producer()
+```
+
+---
+
+## 🛠 Debugging History
+
+| Issue | Cause | Fix |
+|------|------|-----|
+| `docker not recognized` | PATH missing | Reinstalled Docker Desktop |
+| `psql command missing` | PostgreSQL bin not in PATH | Added PATH env var |
+| Kafka restarted repeatedly | Port / config conflict | Restarted containers |
+| RisingWave errors | Tables not dropped | Added `CASCADE` drops |
+| `NoBrokersAvailable` | Kafka not ready | Verified broker state |
+
+✅ Final system stable
 
 ---
 
 ## ✅ Conclusion
 
-✔ Real-time ingestion  
-✔ Delta merge correctness  
-✔ Production-ready streaming foundation  
+This project achieves:
+
+✔ Real-time change ingestion  
+✔ Delta merge logic with streaming SQL  
+✔ Production-ready event architecture  
+✔ Full snapshot always available
+
+---
+
+📌 Author: RisingWave Delta Pipeline Implementation  
+📌 Version: v1.0
+
+---
+
+🎯 Ready for corporate submission ✅
