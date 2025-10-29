@@ -14,18 +14,37 @@ including delete operations.
 
 ---
 
-## 🏗 Architecture & Workflow
+## 🏗 Enterprise Architecture Diagram
 
+```mermaid
+flowchart LR
+    subgraph Client Apps
+        Q1[BI / Dashboard / API Consumers]
+    end
+
+    subgraph Streaming System
+        P[Python Change Event Producer]
+        K[(Kafka Broker)]
+        Z[Zookeeper]
+    end
+
+    subgraph RisingWave Engine
+        S[Kafka Source: user_events]
+        MV[Materialized View: latest_user_state]
+        H[(Event Log Storage)]
+    end
+
+    P --> K
+    K --> S
+    S --> MV
+    S --> H
+    MV --> Q1
+    Z --- K
 ```
-Python Producer (/risingwave-kafka-pipeline/producer.py)
-        ↓
-Kafka Topic: user-events
-        ↓
-RisingWave SOURCE (stream from init.sql)
-        ↓
-Materialized View:
-    latest_user_state
-```
+
+✅ Includes: Kafka Broker, Zookeeper, RisingWave streaming + storage, consumers.
+
+---
 ✔ Full change event history retained  
 ✔ Final snapshot always synchronized  
 ✔ Deletes handled automatically
