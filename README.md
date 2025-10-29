@@ -1,4 +1,5 @@
 # 🚀 Delta Writing with Kafka & RisingWave  
+### Real-Time Streaming State Management
 
 This project demonstrates a **real-time delta writing architecture**, where change events continuously update the latest dataset state using:
 
@@ -6,13 +7,13 @@ This project demonstrates a **real-time delta writing architecture**, where chan
 |----------|------|
 | ✅ Python Producer | Publishes insert/update/delete events to Kafka |
 | ✅ Apache Kafka | Event streaming backbone |
-| ✅ RisingWave | Streaming SQL database computing the latest state |
+| ✅ RisingWave | Streaming SQL database maintaining the latest state |
 
 ---
 
 ## ✅ Result
 
-RisingWave continuously merges delta changes to maintain a **correct and up-to-date state** of all records — including deletes ✅
+RisingWave continuously merges all delta changes to maintain a **correct and up-to-date** state — including deletes ✔
 
 ---
 
@@ -31,18 +32,73 @@ Materialized View:
 
 ✔ Full change event history retained  
 ✔ Final snapshot always accurate  
-✔ Deletes handled correctly
+✔ Deletes handled correctly  
 
 ---
 
 ## 🔧 Requirements
 
-| Software | Usage |
-|---------|------|
-| Docker + Docker Compose | Run Kafka + RisingWave |
-| Python 3.10+ | Execute producer script |
-| kafka-python | Kafka client library |
-| psql CLI | Execute SQL scripts |
+| Software | Version | Usage |
+|---------|---------|------|
+| Docker + Docker Compose | Latest | Run Kafka & RisingWave |
+| Python | 3.10+ | Kafka event producer |
+| Kafka Client Library | kafka-python | Send messages to Kafka |
+| PostgreSQL CLI | psql | Setup SQL pipelines |
+
+---
+
+## 🧰 Tools Installation Guide
+
+### ✅ Install Docker & Docker Compose
+
+#### Windows / Mac  
+Download Docker Desktop from docker.com
+
+#### Linux (Ubuntu Example)
+
+```sh
+sudo apt update
+sudo apt install docker.io docker-compose -y
+sudo systemctl enable --now docker
+```
+
+Verify:
+
+```sh
+docker --version
+docker-compose --version
+```
+
+---
+
+### ✅ Install PostgreSQL CLI
+
+Ubuntu:
+
+```sh
+sudo apt install postgresql-client -y
+```
+
+Mac:
+
+```sh
+brew install libpq
+brew link --force libpq
+```
+
+Verify:
+
+```sh
+psql --version
+```
+
+---
+
+### ✅ Install Python Dependencies
+
+```sh
+pip install kafka-python
+```
 
 ---
 
@@ -54,7 +110,7 @@ Materialized View:
 docker-compose up -d
 ```
 
-Verify services:
+Check containers:
 
 ```sh
 docker ps
@@ -62,39 +118,30 @@ docker ps
 
 ---
 
-### ✅ 2️⃣ Initialize RisingWave Source + Materialized View
+### ✅ 2️⃣ Initialize RisingWave SQL
 
 ```sh
 psql -h localhost -p 4566 -U root -f init.sql
 ```
 
-Creates:
-- Kafka connector
-- `user_events` source
-- `latest_user_state` materialized view ✔
-
 ---
 
-### ✅ 3️⃣ Run Event Producer
+### ✅ 3️⃣ Run Delta Change Producer
 
 ```sh
 python producer.py
 ```
 
-Random change events are streamed every second ✅
-
 ---
 
 ### ✅ 4️⃣ Query RisingWave
 
-View event log:
-
+Event log:
 ```sql
 SELECT * FROM user_events ORDER BY event_order DESC LIMIT 20;
 ```
 
-View final latest merged record state:
-
+Latest state:
 ```sql
 SELECT * FROM latest_user_state ORDER BY id;
 ```
@@ -103,43 +150,34 @@ SELECT * FROM latest_user_state ORDER BY id;
 
 ## 📂 Project Structure
 
-| File | Description |
-|------|-------------|
-| `init.sql` | RisingWave Kafka source + delta view |
-| `producer.py` | Random CRUD-like delta change stream |
-| `docker-compose.yml` | Infrastructure for Kafka + RisingWave |
+| File | Purpose |
+|------|---------|
+| `docker-compose.yml` | Runs Kafka & RisingWave |
+| `init.sql` | Creates streaming tables/views |
+| `producer.py` | Generates streaming CRUD events |
 
 ---
 
-## 🛠 Debugging Notes
+## 🛠 Troubleshooting & Fixes
 
-| Issue | Cause | Resolution |
-|------|------|------------|
-| `docker` not recognized | Missing PATH | Reinstall Docker Desktop |
-| `psql` command not found | PATH not configured | Added PostgreSQL `bin` path |
-| Kafka container failed | Missing Zookeeper env | Updated `docker-compose.yml` |
-| `NoBrokersAvailable` | Broker not ready | Verified `localhost:9092` running |
-
-✅ All setup issues resolved!
+| Issue | Fix |
+|------|-----|
+| `psql not recognized` | Add PostgreSQL bin folder to PATH |
+| Kafka connection failed | Restart docker-compose |
+| Permission denied | Run PowerShell as Admin |
 
 ---
 
 ## 🚀 Future Enhancements
 
-| Feature | Benefit |
-|--------|---------|
-| Debezium CDC | Real-world DB change capture |
-| Iceberg / S3 Sink | Analytics + historical persistence |
-| Real dashboards | Visual business insights |
-| Schema Registry | Event format guarantees |
+- Debezium CDC streaming
+- S3/Iceberg historical warehouse
+- Real-time dashboards
 
 ---
 
 ## ✅ Conclusion
 
-This solution achieves:
-
-✅ Real-time ingestion  
-✅ Delta merge computing latest state  
-✅ Durable event history  
-✅ Robust for production use cases  
+✔ Real-time ingestion  
+✔ Delta merge correctness  
+✔ Production-ready streaming foundation  
