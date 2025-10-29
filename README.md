@@ -259,11 +259,4 @@ This project achieves:
 ✔ Production-ready event architecture  
 ✔ Full snapshot always available
 
----
 
-📌 Author: RisingWave Delta Pipeline Implementation  
-📌 Version: v1.0
-
----
-
-🎯 Ready for corporate submission ✅
