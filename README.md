@@ -123,7 +123,21 @@ Verify:
 ```sh
 docker ps
 ```
-
+Output:
+```sh
+PS C:\Users\lhl3kor\risingwave-kafka-pipeline> docker compose up -d
+time="2025-11-03T10:32:47+05:30" level=warning msg="C:\\Users\\lhl3kor\\risingwave-kafka-pipeline\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+[+] Running 3/3
+ ✔ Container zookeeper   Running                                                                                   0.0s
+ ✔ Container kafka       Running                                                                                   0.0s
+ ✔ Container risingwave  Running                                                                                   0.0s
+PS C:\Users\lhl3kor\risingwave-kafka-pipeline> docker ps
+>>
+CONTAINER ID   IMAGE                              COMMAND                  CREATED      STATUS          PORTS                                                                                      NAMES
+5f062d1781b9   risingwavelabs/risingwave:v2.6.1   "/risingwave/bin/ris…"   3 days ago   Up 15 seconds   0.0.0.0:4566->4566/tcp, [::]:4566->4566/tcp, 0.0.0.0:5691->5691/tcp, [::]:5691->5691/tcp   risingwave
+6198b6709031   confluentinc/cp-kafka:7.4.0        "/etc/confluent/dock…"   3 days ago   Up 15 seconds   0.0.0.0:29092->29092/tcp, [::]:29092->29092/tcp                                            kafka
+39a4da54b44c   confluentinc/cp-zookeeper:7.4.0    "/etc/confluent/dock…"   3 days ago   Up 15 seconds   0.0.0.0:2181->2181/tcp, [::]:2181->2181/tcp                                                zookeeper
+```
 ---
 
 ### ✅ Step 2 — Apply SQL to RisingWave
@@ -136,6 +150,15 @@ This creates:
 ✔ Kafka connector from topic `user-events`  
 ✔ Materialized view `latest_user_state`  
 
+Output:
+```sh
+PS C:\Users\lhl3kor\risingwave-kafka-pipeline\sql> psql -h localhost -p 4566 -U root -d dev -f init.sql
+DROP_SOURCE
+psql:init.sql:2: NOTICE:  materialized view "latest_user_state" does not exist, skipping
+DROP_MATERIALIZED_VIEW
+CREATE_SOURCE
+CREATE_MATERIALIZED_VIEW
+```
 ---
 
 ### ✅ Step 3 — Start Producer
@@ -146,6 +169,28 @@ python producer.py
 
 Streams random insert/update/delete events every second ✅
 
+Output:
+```sh
+PS C:\Users\lhl3kor\risingwave-kafka-pipeline> python producer.py
+📡 Sending events to Kafka topic 'user-events' via localhost:29092...
+
+✅ Sent: {'id': 3, 'name': 'Charlie', 'age': 35, 'op': 'update', 'event_order': 1, 'ts': '2025-11-03 05:42:25'}
+✅ Sent: {'id': 1, 'name': 'Alice', 'age': 24, 'op': 'update', 'event_order': 2, 'ts': '2025-11-03 05:42:26'}
+✅ Sent: {'id': 1, 'name': None, 'age': 25, 'op': 'delete', 'event_order': 3, 'ts': '2025-11-03 05:42:27'}
+✅ Sent: {'id': 1, 'name': 'Alice', 'age': 25, 'op': 'insert', 'event_order': 4, 'ts': '2025-11-03 05:42:28'}
+✅ Sent: {'id': 1, 'name': 'Alice', 'age': 27, 'op': 'update', 'event_order': 5, 'ts': '2025-11-03 05:42:29'}
+✅ Sent: {'id': 3, 'name': 'Charlie', 'age': 36, 'op': 'insert', 'event_order': 6, 'ts': '2025-11-03 05:42:30'}
+✅ Sent: {'id': 3, 'name': 'Charlie', 'age': 36, 'op': 'insert', 'event_order': 7, 'ts': '2025-11-03 05:42:31'}
+✅ Sent: {'id': 2, 'name': 'Bob', 'age': 32, 'op': 'update', 'event_order': 8, 'ts': '2025-11-03 05:42:32'}
+✅ Sent: {'id': 2, 'name': None, 'age': 30, 'op': 'delete', 'event_order': 9, 'ts': '2025-11-03 05:42:33'}
+✅ Sent: {'id': 2, 'name': 'Bob', 'age': 30, 'op': 'insert', 'event_order': 10, 'ts': '2025-11-03 05:42:38'}
+✅ Sent: {'id': 2, 'name': 'Bob', 'age': 32, 'op': 'update', 'event_order': 11, 'ts': '2025-11-03 05:42:39'}
+✅ Sent: {'id': 2, 'name': None, 'age': 30, 'op': 'delete', 'event_order': 12, 'ts': '2025-11-03 05:42:40'}
+✅ Sent: {'id': 2, 'name': None, 'age': 30, 'op': 'delete', 'event_order': 13, 'ts': '2025-11-03 05:42:41'}
+
+🛑 Stopped by user.
+🚀 All messages sent and producer closed.
+```
 ---
 
 ### ✅ Step 4 — Query RisingWave
@@ -154,12 +199,35 @@ View event history:
 ```sql
 SELECT * FROM user_events ORDER BY event_order DESC LIMIT 20;
 ```
-
+Output:
+```sql
+dev=> SELECT * FROM user_events ORDER BY event_order DESC LIMIT 10;
+ id |  name   | age |   op   | event_order |         ts
+----+---------+-----+--------+-------------+---------------------
+  2 |         |  30 | delete |         506 | 2025-10-30 07:00:01
+  3 | Charlie |  38 | update |         505 | 2025-10-30 07:00:00
+  1 |         |  25 | delete |         504 | 2025-10-30 06:59:59
+  3 | Charlie |  38 | update |         503 | 2025-10-30 06:59:58
+  3 | Charlie |  36 | insert |         502 | 2025-10-30 06:59:57
+  1 | Alice   |  24 | update |         501 | 2025-10-30 06:59:56
+  3 | Charlie |  36 | insert |         500 | 2025-10-30 06:59:55
+  3 |         |  36 | delete |         499 | 2025-10-30 06:59:54
+  3 | Charlie |  36 | insert |         498 | 2025-10-30 06:59:53
+  3 |         |  36 | delete |         497 | 2025-10-30 06:59:50
+(10 rows)
+```
 View current latest rows:
 ```sql
 SELECT * FROM latest_user_state ORDER BY id;
 ```
-
+Output:
+```sql
+dev=> SELECT * FROM latest_user_state ORDER BY id;
+ id |  name   | age |   op   |         ts
+----+---------+-----+--------+---------------------
+  3 | Charlie |  38 | update | 2025-10-30 07:00:00
+(1 row)
+```
 ---
 
 ## 📌 Full Code
