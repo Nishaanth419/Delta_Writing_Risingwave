@@ -163,6 +163,54 @@ SELECT * FROM latest_user_state ORDER BY id;
 ---
 
 ## 📌 Full Code
+### ✅ docker-compose.yml
+```yaml
+version: "3.9"
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - "2181:2181"
+    restart: always
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    ports:
+      - "29092:29092"
+    restart: always
+
+  risingwave:
+    image: risingwavelabs/risingwave:v2.6.1
+    container_name: risingwave
+    # use the single_node entrypoint (works across versions 2.6.x)
+    command: ["single_node"]
+    depends_on:
+      - kafka
+    ports:
+      - "4566:4566"   # pgwire for psql
+      - "5691:5691"   # dashboard API (optional)
+    environment:
+      # adjust memory settings if you have many resources; keep modest defaults
+      RW_COMPACTOR_TOTAL_MEMORY_BYTES: 4294967296   # 4GB compactor memory
+      RW_RESERVED_MEMORY_BYTES: 1610612736          # 1.5GB reserved
+    restart: always
+```
 
 ### ✅ init.sql
 ```sql
@@ -180,21 +228,23 @@ CREATE SOURCE user_events (
 WITH (
     connector = 'kafka',
     topic = 'user-events',
-    properties.bootstrap.server = 'localhost:9092',
+    properties.bootstrap.server = 'kafka:9092',
     scan.startup.mode = 'earliest'
 )
 FORMAT PLAIN ENCODE JSON;
 
+-- Materialized view to maintain only the latest active record
 CREATE MATERIALIZED VIEW latest_user_state AS
-SELECT e.id, e.name, e.age
+SELECT e.id, e.name, e.age, e.op, e.ts
 FROM user_events e
 JOIN (
     SELECT id, MAX(event_order) AS latest_order
     FROM user_events
     GROUP BY id
 ) latest
-  ON e.id = latest.id AND e.event_order = latest.latest_order
+ON e.id = latest.id AND e.event_order = latest.latest_order
 WHERE e.op != 'delete';
+
 ```
 
 ✅ Supports deletes correctly
@@ -203,62 +253,66 @@ WHERE e.op != 'delete';
 
 ### ✅ producer.py
 ```python
+# producer.py
 import json
 import time
 import random
 from datetime import datetime, timezone
-from kafka import KafkaProducer, KafkaAdminClient
-from kafka.admin import NewTopic
-from kafka.errors import TopicAlreadyExistsError, NoBrokersAvailable
+from kafka import KafkaProducer
 
-KAFKA_BOOTSTRAP = "localhost:9092"
+MODE = "host"  
+BOOTSTRAP = "localhost:29092" if MODE == "host" else "kafka:9092"
 TOPIC = "user-events"
 
-def ensure_topic():
-    try:
-        admin = KafkaAdminClient(bootstrap_servers=KAFKA_BOOTSTRAP)
-        topic = NewTopic(name=TOPIC, num_partitions=1, replication_factor=1)
-        try:
-            admin.create_topics([topic])
-        except TopicAlreadyExistsError:
-            pass
-        admin.close()
-    except NoBrokersAvailable:
-        raise
 
-def run_producer(send_count=100):
-    ensure_topic()
-    producer = KafkaProducer(
-        bootstrap_servers=KAFKA_BOOTSTRAP,
-        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-    )
-    event_order = 1
-    users = [
-        {"id": 1, "name": "Alice", "age": 25},
-        {"id": 2, "name": "Bob", "age": 30},
-        {"id": 3, "name": "Charlie", "age": 36},
-    ]
+producer = KafkaProducer(
+    bootstrap_servers=BOOTSTRAP,
+    value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+    retries=5,
+    linger_ms=5
+)
 
-    for _ in range(send_count):
-        u = random.choice(users)
-        op = random.choice(["insert","update","delete"])
-        payload = {
-            "id": u["id"],
-            "name": u["name"] if op!="delete" else None,
-            "age": u["age"] if op!="delete" else None,
+users = [
+    {"id": 1, "name": "Alice", "age": 25},
+    {"id": 2, "name": "Bob", "age": 30},
+    {"id": 3, "name": "Charlie", "age": 36},
+]
+
+
+event_order = 1
+print(f"📡 Sending events to Kafka topic '{TOPIC}' via {BOOTSTRAP}...\n")
+
+try:
+    while True:
+        user = random.choice(users)
+        op = random.choice(["insert", "update", "delete"])
+
+        event = {
+            "id": user["id"],
+            "name": user["name"] if op != "delete" else None,
+            "age": user["age"] + random.randint(-2, 2) if op == "update" else user["age"],
             "op": op,
             "event_order": event_order,
-            "ts": datetime.now(timezone.utc).isoformat()
+            "ts": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         }
-        producer.send(TOPIC, value=payload)
-        print("Sent:", payload)
+
+        producer.send(TOPIC, value=event)
+        print(f"✅ Sent: {event}")
+
         event_order += 1
         time.sleep(1)
 
-    producer.close()
+except KeyboardInterrupt:
+    print("\n🛑 Stopped by user.")
 
-if __name__ == "__main__":
-    run_producer()
+except Exception as e:
+    print(f"❌ Send error: {e}")
+
+finally:
+    producer.flush()
+    producer.close()
+    print("🚀 All messages sent and producer closed.")
+
 ```
 
 ---
