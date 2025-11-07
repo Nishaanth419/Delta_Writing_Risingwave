@@ -458,6 +458,7 @@ finally:
 | Kafka restarting repeatedly | Missing ZooKeeper config | Updated `docker-compose.yml` |
 | `NoBrokersAvailable` | Kafka not fully up | Confirmed Kafka on `localhost:9092` |
 | Producer Python errors | Missing packages | Installed kafka-python |
+|Any proxy issue | Bosch proxy | Replace your Cntlm.ini file with the file in the repo | 
 
 ✅ Everything now working as expected
 
