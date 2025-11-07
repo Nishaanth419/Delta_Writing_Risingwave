@@ -132,6 +132,7 @@ flowchart LR
 | Python | Run Kafka producer script | 3.10+ |
 | pip | Install Python dependencies | Latest |
 | psql CLI | Execute SQL on RisingWave | Any |
+| Cntlm | Proxy | 0.92.3 |
 
 ---
 
