@@ -143,7 +143,8 @@ CONTAINER ID   IMAGE                              COMMAND                  CREAT
 ### ✅ Step 2 — Apply SQL to RisingWave
 
 ```sh
-psql -h localhost -p 4566 -U root -f init.sql
+psql -h localhost -p 4566 -U root -d dev -f init.sql
+
 ```
 
 This creates:
