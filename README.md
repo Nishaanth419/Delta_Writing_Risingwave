@@ -196,6 +196,10 @@ PS C:\Users\lhl3kor\risingwave-kafka-pipeline> python producer.py
 
 ### ✅ Step 4 — Query RisingWave
 
+Run: 
+```sql
+psql -h localhost -p 4566 -U root -d dev
+```
 View event history:
 ```sql
 SELECT * FROM user_events ORDER BY event_order DESC LIMIT 20;
