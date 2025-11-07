@@ -461,6 +461,7 @@ finally:
 | Producer Python errors | Missing packages | Installed kafka-python |
 |Any proxy issue | Bosch proxy | Replace your Cntlm.ini file with the file in the repo | 
 
+Refer [Debug_History_Risingwave.md](https://github.com/Nishaanth419/Delta_Writing_Risingwave/blob/main/Debug_History_Risingwave.md) for full Debugging and Fixes Applied
 ✅ Everything now working as expected
 
 ---
