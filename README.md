@@ -1,20 +1,79 @@
 
-# 🚀 Delta Writing with Kafka & RisingWave  
+#  Delta Writing with Kafka & RisingWave  
 ### Real-Time Streaming State Management
+
+## What is RisingWave?
+
+RisingWave is a streaming database — a real-time SQL engine built for continuously processing and updating data as new events arrive.
+Think of it as a PostgreSQL for real-time streams.You send data (events, logs, change streams) from sources like Kafka, Azure Event Hub, or Kinesis.RisingWave continuously updates your query results — like materialized views — as new events come in.It’s PostgreSQL-compatible, meaning you can query it using normal SQL.
+
+##  What is Delta Writing?
+
+**Delta Writing** means updating the *latest state of data* using **streaming changes** — instead of overwriting entire tables (as in batch jobs).
+
+You **merge incremental updates (deltas)** in real time:
+
+| Operation | Description |
+|------------|--------------|
+| `INSERT` | Add new records |
+| `UPDATE` | Modify existing records |
+| `DELETE` | Remove records |
+
+RisingWave can automatically handle these **delta operations** in real time.
+
+---
+
+##  How It Works
+
+RisingWave continuously ingests streams of events (e.g., from **Kafka**, **Azure Event Hub**, or **Blob Storage**), applies SQL-based transformation logic, and maintains **materialized views** that always reflect the **latest data state**.
+
+Unlike batch ETL or nightly merges, RisingWave keeps your tables fresh **continuously**.
+
+---
+
 
 This project demonstrates a **real-time delta writing architecture**, where change events continuously update
 the latest dataset state using Apache Kafka and RisingWave.
 
 ---
 
-## ✅ Result Overview
+#  Materialized Views in RisingWave
+
+##  What is a Materialized View?
+
+A **Materialized View (MV)** is a **precomputed table** that **stores the results of a query physically** —  
+unlike a normal SQL `VIEW`, which recalculates every time you query it.
+
+In **RisingWave**, a materialized view:
+
+-  Continuously processes **incoming streaming data**
+-  Keeps the **result set always up-to-date**
+-  Can be queried like a **regular SQL table**
+
+---
+
+# 🌟 Advantages of Materialized Views in RisingWave
+
+| **Advantage** | **Explanation** |
+|----------------|-----------------|
+|  **Real-Time Refresh** | RisingWave automatically updates Materialized Views (MVs) as new data arrives — no manual triggers required. |
+|  **Precomputed State** | Query results are stored physically, allowing **instant responses** without recalculating each time. |
+|  **Stream + State Integration** | MVs seamlessly merge both **streaming data** and **historical state**, ensuring full context. |
+|  **SQL Simplicity** | Define complex logic easily using **standard SQL** (aggregations, joins, filters). |
+|  **Persistent Storage** | MVs are stored on disk, so their state is **recoverable** even after restarts or failures. |
+|  **Continuous Querying** | Query results remain **live and consistent** without any batch recomputation. |
+|  **Low Maintenance** | No need for cron jobs or refresh scripts — RisingWave handles updates **automatically**. |
+|  **Scalable Architecture** | Perfect for **Azure ACI** or **AKS** deployments, supporting **large-scale streaming analytics**. |
+
+
+##  Result Overview
 
 RisingWave continuously merges delta changes to maintain the **most recent accurate state** of all records,
 including delete operations.
 
 ---
 
-## 🏗 Enterprise Architecture Diagram
+##  Enterprise Architecture Diagram
 
 ```mermaid
 flowchart LR
@@ -62,9 +121,9 @@ flowchart LR
 
 ---
 
-## 🔧 Requirements & Installation Instructions
+##  Requirements & Installation Instructions
 
-### ✅ Required Tools
+###  Required Tools
 
 | Tool | Why Required | Version |
 |------|--------------|---------|
