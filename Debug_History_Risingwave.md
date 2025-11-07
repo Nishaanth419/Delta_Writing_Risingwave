@@ -28,7 +28,8 @@ docker : The term 'docker' is not recognized as the name of a cmdlet
 **Fix:**
 Add Docker Desktop path to system PATH.
 ```
-C:\Program Files\Docker\Dockeresourcesin
+C:\Program Files\Docker\Docker
+esourcesin
 ```
 Restart PowerShell.
 
@@ -43,7 +44,8 @@ psql : The term 'psql' is not recognized
 **Fix:**
 Add PostgreSQL to PATH:
 ```
-setx PATH "$env:PATH;C:\Program Files\PostgreSQL8in"
+setx PATH "$env:PATH;C:\Program Files\PostgreSQL\18\bin"
+
 ```
 
 ---
