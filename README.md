@@ -1,5 +1,5 @@
 
-#  Delta Writing with Kafka & RisingWave  
+#  Delta Writing with Kafka & RisingWave  (Locally)
 ### Real-Time Streaming State Management
 
 ## What is RisingWave?
