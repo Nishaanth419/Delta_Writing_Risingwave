@@ -52,7 +52,7 @@ In **RisingWave**, a materialized view:
 
 ---
 
-# 🌟 Advantages of Materialized Views in RisingWave
+#  Advantages of Materialized Views in RisingWave
 
 | **Advantage** | **Explanation** |
 |----------------|-----------------|
