@@ -483,9 +483,54 @@ This project successfully implements delta writing streaming architecture using:
 ✔ Kafka for event ingestion  
 ✔ RisingWave for real-time state updates  
 ✔ Python for producer automation  
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-It is ready for enterprise streaming data workloads.
+# 💠 Delta Writing with RisingWave  (Azure)
+
+This table lists all **Azure services** required or recommended for implementing a **RisingWave Delta Writing Pipeline** — including event ingestion, storage, compute, and monitoring.
 
 ---
 
-📌 Version: v1.1
+| **Category** | **Azure Service** | **Purpose / Role in Pipeline** | 
+|---------------|------------------|--------------------------------|----------------|
+| ☁️ **Compute / Database** | **Azure Container Instance (ACI)** or **Azure Kubernetes Service (AKS)** | Hosts **RisingWave** (streaming SQL engine). RisingWave reads, processes, and merges data from streams. |
+| 🧩 **Streaming** | **Azure Event Hub** | Acts as the **message broker / ingestion pipeline** where your app sends insert, update, and delete events. | 
+| 📦 **Storage** | **Azure Blob Storage** | Stores **JSON event data** from Event Hub Capture. RisingWave reads these files for delta merging. | ✅ Yes |
+| 🔄 **Event Hub Capture (built-in feature)** | *Built-in, no extra service* | Automatically exports data from Event Hub to Blob Storage every N seconds/minutes. | 
+| 🔐 **Azure Key Vault** | Stores **sensitive secrets** (Event Hub connection strings, Storage account keys, RisingWave credentials). | 
+| ⚙️ **Azure Functions (optional)** | Provides **serverless automation** for data refresh or post-processing (e.g., notifying RisingWave or moving files). | 
+| 🗂️ **Azure Resource Group** | Logical **container for all Azure resources**, simplifying management and cost tracking. |
+| 🕵️ **Azure Monitor** | Provides **logging and metrics** for Event Hub throughput, Blob writes, and RisingWave container health. | Recommended |
+| 🧰 **Azure Virtual Network (VNet)** | Enables **private networking** between Event Hub, Blob, and RisingWave for secure internal communication. | 
+| 🚀 **Azure Container Registry (ACR)** | Stores **custom RisingWave Docker images** for CI/CD or enterprise deployment. | 
+| 📊 **Azure Log Analytics / Application Insights** | Offers **deep monitoring** and query insights for Event Hub ingestion, Blob activity, and RisingWave performance. |
+
+---
+
+## ✅ Summary
+
+- **Minimum Required Services:**  
+  - Azure Event Hub  
+  - Azure Blob Storage  
+  - Azure Container Instance (or AKS)  
+  - Azure Resource Group  
+
+- **Recommended:**  
+  - Azure Key Vault  
+  - Azure Monitor  
+
+- **Optional (for Future production ):**  
+  - Azure Functions  
+  - Azure Virtual Network  
+  - Azure Container Registry  
+  - Azure Log Analytics  
+
+---
+
+> 🧠 **Tip:**  
+> For small-scale testing, you can deploy RisingWave via **Azure Container Instance (ACI)** with Event Hub Capture → Blob → RisingWave flow.  
+> For production workloads,  **AKS + VNet + ACR + Monitor** for better scalability, observability, and security.
+
+
+---
+
