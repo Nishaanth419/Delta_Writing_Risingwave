@@ -148,7 +148,7 @@ BOOTSTRAP = "localhost:29092"
 
 ---
 
-## 11️⃣ RisingWave Meta Error
+##1️⃣1️⃣ RisingWave Meta Error
 
 **Error:**
 ```
@@ -162,7 +162,7 @@ properties.bootstrap.server = 'localhost:29092'
 
 ---
 
-## 12️⃣ PowerShell SQL Execution Error
+## 1️⃣2️⃣ PowerShell SQL Execution Error
 
 **Error:**
 ```
@@ -180,7 +180,7 @@ SELECT * FROM latest_user_state ORDER BY id;
 
 ---
 
-## 13️⃣ Azure Event Hubs (Port 9093) Connection Failure
+## 1️⃣3️⃣ Azure Event Hubs (Port 9093) Connection Failure
 
 **Error:**
 ```
@@ -195,7 +195,7 @@ Test-NetConnection Risingwave.servicebus.windows.net -Port 9093
 
 ---
 
-## 14️⃣ Kafka Producer — Event Hubs SASL Connection
+## 1️⃣4️⃣ Kafka Producer — Event Hubs SASL Connection
 
 **Error:**
 ```
@@ -212,7 +212,7 @@ sasl_plain_password="Endpoint=sb://Risingwave.servicebus.windows.net/;SharedAcce
 
 ---
 
-## 15️⃣ CNTLM Proxy Setup Validation
+## 1️⃣5️⃣ CNTLM Proxy Setup Validation
 
 **Error:**
 Requests blocked on corporate network.
