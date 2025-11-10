@@ -148,7 +148,7 @@ BOOTSTRAP = "localhost:29092"
 
 ---
 
-##1️⃣1️⃣ RisingWave Meta Error
+## 1️⃣1️⃣ RisingWave Meta Error
 
 **Error:**
 ```
