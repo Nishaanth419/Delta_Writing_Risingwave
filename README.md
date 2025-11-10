@@ -485,6 +485,8 @@ This project successfully implements delta writing streaming architecture using:
 ✔ Python for producer automation  
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+
+
 # 💠 Delta Writing with RisingWave  (Azure)
 
 This table lists all **Azure services** required or recommended for implementing a **RisingWave Delta Writing Pipeline** — including event ingestion, storage, compute, and monitoring.
